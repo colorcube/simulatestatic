@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+
+
+
+
+<h1 id="simulate-static-urls-typo3-extension">Simulate Static URLs TYPO3 Extension</h1>
+<p>This is a fork of the original simulatestatic extension. The extension was excluded from the TYPO3 core with version 6.0.</p>
+<p>This version just makes the extension work with TYPO3 6.x+. Only minor changes are included.</p>
+<h2 id="configuration">Configuration</h2>
+<p>There are some tutorials online. Maybe someone is willing to add his tutorial here?</p>
+<p>Example TypoScript:</p>
+<pre><code>config {
+    simulateStaticDocuments = 1
+    simulateStaticDocuments_addTitle = 40
+    simulateStaticDocuments_noTypeIfNoTitle = 1
+    simulateStaticDocuments_dontRedirectPathInfoError = 1
+    simulateStaticDocuments_replacementChar = _
+
+    // if you want some parameters shorter
+    simulateStaticDocuments_pEnc = md5
+    simulateStaticDocuments_pEnc_onlyP = cHash, L, print, tx_ttnews[backPid], tx_ttnews[tt_news], tx_ttnews[pS], tx_ttnews[pL], tx_ttnews[arc], tx_ttnews[cat], tx_ttnews[pointer], tx_ttnews[swords]
+    // disbale the other one
+    tx_realurl_enable = 0
+}</code></pre>
+<h3 id="properties">Properties</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Property</th>
+<th align="left">Data type</th>
+<th align="left">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">simulateStaticDocuments\_addTitle_</td>
+<td align="left">int</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">simulateStaticDocuments\_dontRedirectPathInfoError_</td>
+<td align="left">boolean</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">simulateStaticDocuments\_noTypeIfNoTitle_</td>
+<td align="left">boolean</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">simulateStaticDocuments\_pEnc\_onlyP_</td>
+<td align="left">string</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">simulateStaticDocuments\_pEnc_</td>
+<td align="left">string</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">simulateStaticDocuments\_replacementChar_</td>
+<td align="left">string</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">simulateStaticDocuments_</td>
+<td align="left">boolean or string</td>
+<td align="left"></td>
+</tr>
+</tbody>
+</table>
+<h4 id="simulatestaticdocuments">simulateStaticDocuments</h4>
+<dl>
+<dt>Property</dt>
+<dd><p>simulateStaticDocuments</p>
+</dd>
+<dt>Data type</dt>
+<dd><p>boolean /</p>
+<p>string</p>
+</dd>
+<dt>Description</dt>
+<dd><p>If set TYPO3 makes all links in another way than usual. This can be used with <strong>Apache compiled with mod_rewrite and configured in httpd.conf for use of this in the &quot;.htaccess&quot;-files.</strong></p>
+<p>Include this in the .htaccess file</p>
+<pre><code>RewriteEngine On
+RewriteRule   ^[^/]*\.html$  index.php</code></pre>
+<p>This means that any &quot;*.html&quot;-documents should be handled by index.php.</p>
+<p>Now if is done, TYPO3 will interpret the url of the html-document like this:</p>
+<p>[title].[id].[type].html</p>
+<p>Title is optional and only useful for the entries in the apache log-files. You may omit both [title] and [type] but if title is present, type must also be there!.</p>
+<p><strong>Example:</strong></p>
+<p>TYPO3 will interpret this as page with uid=23 and type=1 :</p>
+<pre><code>Startpage.23.1.html</code></pre>
+<p>TYPO3 will interpret this as the page with alias = &quot;start&quot; and the type is zero (default):</p>
+<pre><code>start.html</code></pre>
+<p><strong>Alternative option (PATH_INFO):</strong></p>
+<p>Instead of using the rewrite-module in apache (eg. if you're running Windows!) you can use the PATH_INFO variable from PHP.</p>
+<p>It's very simple. Just set simulateStaticDocuments to &quot;PATH_INFO&quot; and you're up and running!</p>
+<p><strong>Also:</strong> See below, .absRefPrefix</p>
+<p><strong>Example (put in Setup-field of your template):</strong></p>
+<pre><code>config.simulateStaticDocuments = PATH_INFO</code></pre>
+</dd>
+<dt>Default</dt>
+<dd><p>default is defined by a configuration option in localconf.php. It's</p>
+<p>$TYPO3_CONF_VARS['FE']['simulateStaticDocuments'] = 1;</p>
+<p>This affects all sites in the database.</p>
+<p>You can also set this value to the string &quot;PATH_INFO&quot;</p>
+</dd>
+</dl>
+<h4 id="simulatestaticdocuments_addtitle">simulateStaticDocuments_addTitle</h4>
+<dl>
+<dt>Property</dt>
+<dd><p>simulateStaticDocuments_addTitle</p>
+</dd>
+<dt>Data type</dt>
+<dd><p>int</p>
+</dd>
+<dt>Description</dt>
+<dd><p>If not zero, TYPO3 generates urls with the title in, limited to the first [simulateStaticDocuments_addTitle] number of chars.</p>
+<p><strong>Example:</strong></p>
+<pre><code>Startpage.23.1.html</code></pre>
+<p>instead of the default, &quot;23.1.html&quot;, without the title.</p>
+</dd>
+</dl>
+<p>Default</p>
+<h4 id="simulatestaticdocuments_notypeifnotitle">simulateStaticDocuments_noTypeIfNoTitle</h4>
+<dl>
+<dt>Property</dt>
+<dd><p>simulateStaticDocuments_noTypeIfNoTitle</p>
+</dd>
+<dt>Data type</dt>
+<dd><p>boolean</p>
+</dd>
+<dt>Description</dt>
+<dd><p>If set, then the type-value will not be set in the simulated filename if the type value is zero anyways. However the filename must be without a title.</p>
+<p><strong>Example:</strong></p>
+<p>&quot;Startpage.23.0.html&quot; would <em>still</em> be &quot;Startpage.23.0.html&quot;</p>
+<p>&quot;23.0.html&quot; would be &quot;23.html&quot; (that is without the zero)</p>
+<p>&quot;23.1.html&quot; would <em>still</em> be &quot;23.1.html&quot;</p>
+</dd>
+</dl>
+<p>Default</p>
+<h4 id="simulatestaticdocuments_replacementchar">simulateStaticDocuments_replacementChar</h4>
+<dl>
+<dt>Property</dt>
+<dd><p>simulateStaticDocuments_replacementChar</p>
+</dd>
+<dt>Data type</dt>
+<dd><p>string</p>
+</dd>
+<dt>Description</dt>
+<dd><p>Word separator for URLs generated by simulateStaticDocuments. If set to</p>
+<p>hyphen, this option allows search engines to index keywords in URLs. Before TYPO3 4.0 this character was hard-coded to underscore.</p>
+<p>Depends on the compatibility mode (see Tools&gt;Install&gt;Update wizard):</p>
+<p><em>compatibility mode &lt; 4.0:</em> underscore &quot;_&quot;</p>
+<p><em>compatibility mode &gt;= 4.0:</em> hyphen &quot;-&quot;</p>
+</dd>
+</dl>
+<p>Default</p>
+<h4 id="simulatestaticdocuments_dontredirectpathinfoerror">simulateStaticDocuments_dontRedirectPathInfoError</h4>
+<dl>
+<dt>Property</dt>
+<dd><p>simulateStaticDocuments_dontRedirectPathInfoError</p>
+</dd>
+<dt>Data type</dt>
+<dd><p>boolean</p>
+</dd>
+<dt>Description</dt>
+<dd><p>Regarding PATH_INFO mode:</p>
+<p>When a page is requested by &quot;PATH_INFO&quot; method it must be configured in order to work properly. If PATH_INFO is not configured, the index_ts.php script sends a location header to the correct page. However if you better like an error message outputted, just set this option.</p>
+</dd>
+</dl>
+<p>Default</p>
+<h4 id="simulatestaticdocuments_penc">simulateStaticDocuments_pEnc</h4>
+<dl>
+<dt>Property</dt>
+<dd><p>simulateStaticDocuments_pEnc</p>
+</dd>
+<dt>Data type</dt>
+<dd><p>string</p>
+</dd>
+<dt>Description</dt>
+<dd><p>Allows you to also encode additional parameters into the simulated filename.</p>
+<p><strong>Example:</strong></p>
+<p>You have a news-plugin. The main page has the url &quot;Page_1.228.0.html&quot; but when one clicks on a news item the url will be &quot;Page_1.228.0.html?&amp;tx_mininews_pi1[showUid]=2&amp;cHash=b8d239c224&quot; instead.</p>
+<p>Now, this URL will not be indexed by external search-engines because of the query-string (everything after the &quot;?&quot; mark). This property avoids this problem by encoding the parameters. These are the options:</p>
+<p><strong>Value set to &quot;base64&quot;:</strong></p>
+<p>This will transform the filename used to this value: &quot;Page_1.228+B6Jn R4X21pbmluZXdzX3BpMVtzaG93VWlkXT0yJmNIYXNoPWI4ZDIzOWMyMjQ_.0.html&quot;. The query string has simply been base64-encoded (and some more...) and added to the HTML-filename (so now external search-engines will find this!). The really great thing about this that the filename is self-reliant because the filename contains the parameters. The downside to it is the very very long filename.</p>
+<p><strong>Value set to &quot;md5&quot;:</strong></p>
+<p>This will transform the filename used to this value:</p>
+<p>&quot;Page_1.228+M57867201f4a.0.html&quot;. Now, what a lovely, short filename! Now all the parameters has been hashed into a 10-char string inserted into the filename. At the same time an entry has been added to a cache table in the database so when a request for this filename reaches the frontend, then the REAL parameter string is found in the database! The really great thing about this is that the filename is very short (opposite to the base64-method). The downside to this is that IF you clear the database cache table at any time, the URL here does NOT work until a page with the link has been generated again (re-inserting the parameter list into the database).</p>
+<p><strong>NOTICE:</strong> From TYPO3 3.6.0 the encoding will work only on parameters that are manually entered in the list set by .simulateStaticDocuments_pEnc_onlyP (see right below) or those parameters that various plugins might allow in addition. This is to limit the run-away risk when many parameters gets combined.</p>
+</dd>
+</dl>
+<p>Default</p>
+<h4 id="simulatestaticdocuments_penc_onlyp">simulateStaticDocuments_pEnc_onlyP</h4>
+<dl>
+<dt>Property</dt>
+<dd><p>simulateStaticDocuments_pEnc_onlyP</p>
+</dd>
+<dt>Data type</dt>
+<dd><p>string</p>
+</dd>
+<dt>Description</dt>
+<dd><p>A list of variables that may be a part of the md5/base64 encoded part of a simulate_static_document virtual filename (see property in the row above).</p>
+<p><strong>Example:</strong></p>
+<pre><code>simulateStaticDocuments_pEnc_onlyP = tx_maillisttofaq_pi1[pointer], L, print</code></pre>
+<p>-&gt; this will allow the &quot;pointer&quot; parameter for the extension &quot;maillisttofaq&quot; to be included (in addition to whatever vars the extension sets itself) and further the parameter &quot;L&quot; (could be language selection) and &quot;print&quot; (could be print-version).</p>
+</dd>
+</dl>
+<p>Default</p>
+<h2 id="roadmap">Roadmap</h2>
+<p>There's none. Just keep this extension working and fix bugs.</p>
+<p>Generally I still like the concept of this extension. And for many use cases it is just fine. But instead of working on this extension for new features, I would prefer to write a new cleaner extension with the same features (and some more).</p>
+<h2 id="contribute">Contribute</h2>
+<ul>
+<li>Send pull requests to the repository. &lt;<a href="https://github.com/colorcube/simulatestatic" class="uri">https://github.com/colorcube/simulatestatic</a>&gt;</li>
+<li>Use the issue tracker for feedback and discussions. &lt;<a href="https://github.com/colorcube/simulatestatic/issues" class="uri">https://github.com/colorcube/simulatestatic/issues</a>&gt;</li>
+</ul>
+<h2 id="alternatives">Alternatives</h2>
+<ul>
+<li>realurl</li>
+<li>cooluri</li>
+<li>autourl <a href="https://github.com/smichaelsen/typo3-autourls" class="uri">https://github.com/smichaelsen/typo3-autourls</a></li>
+<li>nawork_uri (?)</li>
+</ul>
+<p><strong>Why using this old technology? We have funky-whatever-url instead!</strong></p>
+<p>Because it works! Reliable! Always!</p>
+<p>Other speaking url solutions have a problem. It is impossible to decode such a url to a TYPO3 page without storing that url before with the relation to the page. If you loose that information you can't decode the url. This is broken by design.</p>
+<p><em>To be honest simulatestatic has also a feature to encode parameters in shorter urls which produces problems if you deleted the hash table. But still the right page would be displayed.</em></p>
+<p>&gt; But the user can remember such urls!</p>
+<p>Seriously?! Nobody types urls by hand, therefore it doesn't matter.</p>
+<p>&gt; But Google want speaking urls!</p>
+<p>No. Maybe. I don't care.</p>
+<p>&gt; But it looks better.</p>
+<p>Sometimes it looks nice, but often the urls get so long, it is just a massive line of text nobody looks at.</p>
+<p>&gt; It seems you dont' like the xxxxurl extension very much.</p>
+<p>Well, every time I have a weird problem in TYPO3, the first thing is to deactivate xxxxurl.</p>
+</body>
+</html>
