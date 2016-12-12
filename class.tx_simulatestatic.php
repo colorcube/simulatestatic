@@ -45,8 +45,8 @@ class tx_simulatestatic {
 	/**
 	 * Initializes the extension, sets some configuration options and does some basic checks
 	 *
-	 * @param	array		holds all the information about the link that is about to be created
-	 * @param	tslib_fe	is a reference to the parent object that calls the hook
+	 * @param	array $parameters		holds all the information about the link that is about to be created
+	 * @param	tslib_fe $parentObject	is a reference to the parent object that calls the hook
 	 * @return	void
 	 */
 	public function hookInitConfig(array &$parameters, \TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController $parentObject)
@@ -127,8 +127,8 @@ class tx_simulatestatic {
 	/**
 	 * Hook for creating a speaking URL when using the generic linkData function
 	 *
-	 * @param	array				holds all the information about the link that is about to be created
-	 * @param	t3lib_TStemplate	is a reference to the parent object that calls the hook
+	 * @param	array $parameters				holds all the information about the link that is about to be created
+	 * @param	t3lib_TStemplate $parentObject	is a reference to the parent object that calls the hook
 	 * @return	void
 	 */
 	public function hookLinkDataPostProc(array &$parameters, \TYPO3\CMS\Core\TypoScript\TemplateService &$parentObject)
@@ -155,7 +155,7 @@ class tx_simulatestatic {
 			$LD['linkVars'],
 			($LD['no_cache'] ? TRUE : FALSE)
 		);
-		if ($this->conf['mode'] == 'PATH_INFO') {
+		if ($this->conf['mode'] === 'PATH_INFO') {
 			$url = 'index.php/' . str_replace('.', '/', $url) . '/';
 		} else {
 			$url .= '.html';
@@ -192,21 +192,23 @@ class tx_simulatestatic {
 	 * 3:      '[id].html'                 - only id, type is set to the default, zero!
 	 * NOTE: In all case 'id' may be the uid-number OR the page alias (if any)
 	 *
-	 * @param	array		includes a reference to the parent Object (which is the global TSFE)
-	 * @param	tslib_fe	is a reference to the global TSFE
+	 * @param	array $parameters		includes a reference to the parent Object (which is the global TSFE)
+	 * @param	tslib_fe $parentObject	is a reference to the global TSFE
 	 * @return	void
 	 */
 	public function hookCheckAlternativeIDMethods(array &$parameters, \TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController &$parentObject)
     {
+		$this->decodePEncoding($parentObject->siteScript);
+
 		// If there has been a redirect (basically; we arrived here otherwise
 		// than via "index.php" in the URL)
 		// this can happend either due to a CGI-script or because of reWrite rule.
 		// Earlier we used $_SERVER['REDIRECT_URL'] to check
-		if ($parentObject->siteScript && substr($parentObject->siteScript, 0, 9) != 'index.php') {
+		if ($parentObject->siteScript && substr($parentObject->siteScript, 0, 9) !== 'index.php') {
 			$uParts = parse_url($parentObject->siteScript);
 			$fI = GeneralUtility::split_fileref($uParts['path']);
 
-			if (!$fI['path'] && $fI['file'] && substr($fI['file'], -5) == '.html') {
+			if (!$fI['path'] && $fI['file'] && substr($fI['file'], -5) === '.html') {
 				$parts = explode('.', $fI['file']);
 				$pCount = count($parts);
 				if ($pCount > 2) {
@@ -256,35 +258,30 @@ class tx_simulatestatic {
 				$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('params', 'cache_md5params', 'md5hash=' . $GLOBALS['TYPO3_DB']->fullQuoteStr(substr($string, 2), 'cache_md5params'));
 				$row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);
 
-				$GLOBALS['TYPO3_DB']->sql_free_result($res);
-				$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
-					'cache_md5params',
-					'md5hash=' . $GLOBALS['TYPO3_DB']->fullQuoteStr(substr($string, 2), 'cache_md5params'), array('tstamp' => $GLOBALS['EXEC_TIME'])
-				);
-				parse_str($row['params'], $getVars);
+                $GLOBALS['TSFE']->updateMD5paramsRecord(substr($string, 2));
+
+				parse_str(urldecode($row['params']), $getVars);
 			break;
 		}
 		$GLOBALS['TSFE']->mergingWithGetVars($getVars);
 	}
 
-	/**
-	 * Hook for modifying the page id in tslib_fe.
-	 *
-	 * TSFE->id is searched for '+' sign.
-	 * If the sign is present, all successive data is analysed.
-	 *
-	 * @param array $parameters: Empty array; unused
-	 * @param tslib_fe $parentObject: A reference to the global TSFE
-	 * @return void
-	 */
-	public function hookModifyPageId(array &$parameters, tslib_fe &$parentObject) {
-			// Splitting the Id by a '+' sign
-		$idParts = explode('+', $parameters['id'], 2);
-		if (isset($idParts[1])) {
-			$this->idPartsAnalyze($idParts[1]);
-		}
-		return $idParts[0];
-	}
+    /**
+     * search and process pEncoded parameter
+     *
+     * url is searched for '+' sign.
+     * If the sign is present, all successive data is analysed.
+     *
+     * @param string $url
+     */
+    public function decodePEncoding($url) {
+        // Splitting the Id by a '+' sign
+        $idParts = explode('+', $url, 2);
+        if (isset($idParts[1])) {
+            list($hash) = explode('.', $idParts[1]);
+            $this->idPartsAnalyze($hash);
+        }
+    }
 
 	/********************************************
 	 *
@@ -295,11 +292,11 @@ class tx_simulatestatic {
 	/**
 	 * Make simulation filename (without the ".html" ending, only body of filename)
 	 *
-	 * @param	string		The page title to use
-	 * @param	mixed		The page id (integer) or alias (string)
-	 * @param	integer		The type number
-	 * @param	string		Query-parameters to encode (will be done only if caching is enabled and TypoScript configured for it. I don't know it this makes much sense in fact...)
-	 * @param	boolean		The "no_cache" status of the link.
+	 * @param	string $inTitle		The page title to use
+	 * @param	mixed $page		The page id (integer) or alias (string)
+	 * @param	integer $type		The type number
+	 * @param	string $addParams		Query-parameters to encode (will be done only if caching is enabled and TypoScript configured for it. I don't know it this makes much sense in fact...)
+	 * @param	boolean $no_cache		The "no_cache" status of the link.
 	 * @return	string		The body of the filename.
 	 */
 	public function makeSimulatedFileName($inTitle, $page, $type, $addParams = '', $no_cache = FALSE)
@@ -365,7 +362,7 @@ class tx_simulatestatic {
 	/**
 	 * Processes a query-string with GET-parameters and returns two strings, one with the parameters that CAN be encoded and one array with those which can't be encoded (encoded by the M5 or B6 methods)
 	 *
-	 * @param	string		Query string to analyse
+	 * @param	string $linkVars		Query string to analyse
 	 * @return	array		Two num keys returned, first is the parameters that MAY be encoded, second is the non-encodable parameters.
 	 * @see makeSimulatedFileName(), t3lib_tstemplate::linkData()
 	 */
@@ -400,9 +397,9 @@ class tx_simulatestatic {
 	/**
 	 * Converts input string to an ASCII based file name prefix
 	 *
-	 * @param	string		String to base output on
-	 * @param	integer		Number of characters in the string
-	 * @param	string		Character to put in the end of string to merge it with the next value.
+	 * @param	string $inTitle		String to base output on
+	 * @param	integer $maxTitleChars		Number of characters in the string
+	 * @param	string $mergeChar		Character to put in the end of string to merge it with the next value.
 	 * @return	string		Converted string
 	 */
 	public function fileNameASCIIPrefix($inTitle, $maxTitleChars, $mergeChar = '.')
@@ -411,7 +408,7 @@ class tx_simulatestatic {
 
 		// Get replacement character
 		$replacementChar = $this->conf['replacementChar'];
-		$replacementChars = '_\-' . ($replacementChar != '_' && $replacementChar != '-' ? $replacementChar : '');
+		$replacementChars = '_\-' . ($replacementChar !== '_' && $replacementChar !== '-' ? $replacementChar : '');
 		$out = preg_replace('/[^A-Za-z0-9_-]/', $replacementChar, trim(substr($out, 0, $maxTitleChars)));
 		$out = preg_replace('/([' . $replacementChars . ']){2,}/', '\1', $out);
 		$out = preg_replace('/['  . $replacementChars . ']?$/', '', $out);
