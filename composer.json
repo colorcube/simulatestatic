@@ -1,0 +1,15 @@
+{
+    "name": "colorcube/simulatestatic",
+    "description": "Simulate Static URLs. TYPO3 extension that adds the possibility to have simple speaking URLs in the TYPO3 frontend pages.",
+    "type": "typo3-cms-extension",
+    "license": "GPL-2.0+",
+    "require": {
+        "typo3/cms-core": "^6.0"
+    },
+    "replace": {
+        "autourls": "self.version",
+        "typo3-ter/autourls": "self.version"
+    }
+}
+
+

@@ -25,6 +25,10 @@
 *
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
+
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+
+
 /**
  * Class that does the simulatestatic feature (Speaking URLs)
  * Was extracted for TYPO3 4.3 from the core
@@ -45,7 +49,8 @@ class tx_simulatestatic {
 	 * @param	tslib_fe	is a reference to the parent object that calls the hook
 	 * @return	void
 	 */
-	public function hookInitConfig(array &$parameters, tslib_fe &$parentObject) {
+	public function hookInitConfig(array &$parameters, \TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController $parentObject)
+    {
 		$TSconf = &$parameters['config'];
 
 		// if .simulateStaticDocuments was not present, the installation-wide default value will be used
@@ -68,11 +73,11 @@ class tx_simulatestatic {
 			'pEncodingOnlyP' => ($TSconf['simulateStaticDocuments_pEnc_onlyP'] ? $TSconf['simulateStaticDocuments_pEnc_onlyP'] : $TSconf['simulateStaticDocuments.']['pEncoding_onlyP']),
 			'addTitle'  => ($TSconf['simulateStaticDocuments_addTitle'] ? $TSconf['simulateStaticDocuments_addTitle'] : $TSconf['simulateStaticDocuments.']['addTitle']),
 			'noTypeIfNoTitle' => ($TSconf['simulateStaticDocuments_noTypeIfNoTitle'] ? $TSconf['simulateStaticDocuments_noTypeIfNoTitle'] : $TSconf['simulateStaticDocuments.']['noTypeIfNoTitle']),
-			'replacementChar' => (t3lib_div::compat_version('4.0') ? '-' : '_')
+			'replacementChar' => (GeneralUtility::compat_version('4.0') ? '-' : '_')
 		);
 
 		if ($this->conf['pEncodingOnlyP']) {
-			$tempParts = t3lib_div::trimExplode(',', $this->conf['pEncodingOnlyP'], 1);
+			$tempParts = GeneralUtility::trimExplode(',', $this->conf['pEncodingOnlyP'], 1);
 			foreach ($tempParts as $tempPart) {
 				$this->pEncodingAllowedParamNames[$tempPart] = 1;
 			}
@@ -89,7 +94,7 @@ class tx_simulatestatic {
 		$absRefPrefix = $TSconf['absRefPrefix'];
 		$absRefPrefix = trim($absRefPrefix);
 		if ((!strcmp($this->conf['mode'], 'PATH_INFO') || $parentObject->absRefPrefix_force) && !$absRefPrefix) {
-			$absRefPrefix = t3lib_div::dirname(t3lib_div::getIndpEnv('SCRIPT_NAME')) . '/';
+			$absRefPrefix = GeneralUtility::dirname(GeneralUtility::getIndpEnv('SCRIPT_NAME')) . '/';
 		}
 		$parentObject->absRefPrefix = $absRefPrefix;
 		$parentObject->config['config']['absRefPrefix'] = $absRefPrefix;
@@ -97,14 +102,14 @@ class tx_simulatestatic {
 
 		// Check PATH_INFO url
 		if ($parentObject->absRefPrefix_force && strcmp($this->conf['mode'], 'PATH_INFO')) {
-			$redirectUrl = t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'index.php?id=' . $parentObject->id . '&type='.$parentObject->type;
+			$redirectUrl = GeneralUtility::getIndpEnv('TYPO3_REQUEST_DIR') . 'index.php?id=' . $parentObject->id . '&type='.$parentObject->type;
 			if ($this->conf['dontRedirectPathInfoError']) {
 				if ($parentObject->checkPageUnavailableHandler()) {
 					$parentObject->pageUnavailableAndExit('PATH_INFO was not configured for this website, and the URL tries to find the page by PATH_INFO!');
 				} else {
 					$message = 'PATH_INFO was not configured for this website, and the URL tries to find the page by PATH_INFO!';
 					header(t3lib_utility_Http::HTTP_STATUS_503);
-					t3lib_div::sysLog($message, 'cms', t3lib_div::SYSLOG_SEVERITY_ERROR);
+					GeneralUtility::sysLog($message, 'cms', GeneralUtility::SYSLOG_SEVERITY_ERROR);
 					$message = 'Error: PATH_INFO not configured: ' . $message . '<br /><br /><a href="' . htmlspecialchars($redirectUrl) . '">Click here to get to the right page.</a>';
 					throw new RuntimeException($message, 1294587706);
 				}
@@ -126,7 +131,8 @@ class tx_simulatestatic {
 	 * @param	t3lib_TStemplate	is a reference to the parent object that calls the hook
 	 * @return	void
 	 */
-	public function hookLinkDataPostProc(array &$parameters, t3lib_TStemplate &$parentObject) {
+	public function hookLinkDataPostProc(array &$parameters, \TYPO3\CMS\Core\TypoScript\TemplateService &$parentObject)
+    {
 		if (!$this->enabled) {
 			return;
 		}
@@ -137,7 +143,7 @@ class tx_simulatestatic {
 
 		// MD5/base64 method limitation
 		$remainLinkVars = '';
-		$flag_pEncoding = (t3lib_div::inList('md5,base64', $this->conf['pEncoding']) && !$LD['no_cache']);
+		$flag_pEncoding = (GeneralUtility::inList('md5,base64', $this->conf['pEncoding']) && !$LD['no_cache']);
 		if ($flag_pEncoding) {
 			list($LD['linkVars'], $remainLinkVars) = $this->processEncodedQueryString($LD['linkVars']);
 		}
@@ -145,7 +151,7 @@ class tx_simulatestatic {
 		$url = $this->makeSimulatedFileName(
 			$page['title'],
 			($page['alias'] ? $page['alias'] : $page['uid']),
-			intval($parameters['typeNum']),
+			(int)($parameters['typeNum']),
 			$LD['linkVars'],
 			($LD['no_cache'] ? TRUE : FALSE)
 		);
@@ -190,20 +196,21 @@ class tx_simulatestatic {
 	 * @param	tslib_fe	is a reference to the global TSFE
 	 * @return	void
 	 */
-	public function hookCheckAlternativeIDMethods(array &$parameters, tslib_fe &$parentObject) {
+	public function hookCheckAlternativeIDMethods(array &$parameters, \TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController &$parentObject)
+    {
 		// If there has been a redirect (basically; we arrived here otherwise
 		// than via "index.php" in the URL)
 		// this can happend either due to a CGI-script or because of reWrite rule.
 		// Earlier we used $_SERVER['REDIRECT_URL'] to check
 		if ($parentObject->siteScript && substr($parentObject->siteScript, 0, 9) != 'index.php') {
 			$uParts = parse_url($parentObject->siteScript);
-			$fI = t3lib_div::split_fileref($uParts['path']);
+			$fI = GeneralUtility::split_fileref($uParts['path']);
 
 			if (!$fI['path'] && $fI['file'] && substr($fI['file'], -5) == '.html') {
 				$parts = explode('.', $fI['file']);
 				$pCount = count($parts);
 				if ($pCount > 2) {
-					$parentObject->type = intval($parts[$pCount-2]);
+					$parentObject->type = (int)($parts[$pCount-2]);
 					$parentObject->id = $parts[$pCount-3];
 				} else {
 					$parentObject->type = 0;
@@ -213,11 +220,11 @@ class tx_simulatestatic {
 		}
 
 		// If PATH_INFO is defined as simulateStaticDocuments mode and has information:
-		if (t3lib_div::getIndpEnv('PATH_INFO') && strpos(t3lib_div::getIndpEnv('TYPO3_SITE_SCRIPT'), 'index.php/') === 0) {
-			$parts = t3lib_div::trimExplode('/', t3lib_div::getIndpEnv('PATH_INFO'), TRUE);
+		if (GeneralUtility::getIndpEnv('PATH_INFO') && strpos(GeneralUtility::getIndpEnv('TYPO3_SITE_SCRIPT'), 'index.php/') === 0) {
+			$parts = GeneralUtility::trimExplode('/', GeneralUtility::getIndpEnv('PATH_INFO'), TRUE);
 			$pCount = count($parts);
 			if ($pCount > 1) {
-				$parentObject->type = intval($parts[$pCount-1]);
+				$parentObject->type = (int)($parts[$pCount-1]);
 				$parentObject->id = $parts[$pCount-2];
 			} else {
 				$parentObject->type = 0;
@@ -229,7 +236,7 @@ class tx_simulatestatic {
 
 	/**
 	 * Analyzes the second part of a id-string (after the "+"), looking for B6 or M5 encoding
-	 * If found it will resolve it and restore the variables in global $_GET.
+	 * and if found it will resolve it and restore the variables in global $_GET.
 	 * If values for ->cHash, ->no_cache, ->jumpurl and ->MP is found,
 	 * they are also loaded into the internal vars of this class.
 	 * => Not yet used, could be ported from tslib_fe as well
@@ -237,7 +244,8 @@ class tx_simulatestatic {
 	 * @param string $string: String to analyze
 	 * @return void
 	 */
-	protected function idPartsAnalyze($string) {
+	protected function idPartsAnalyze($string)
+    {
 		$getVars = '';
 		switch (substr($string, 0, 2)) {
 			case 'B6':
@@ -294,9 +302,10 @@ class tx_simulatestatic {
 	 * @param	boolean		The "no_cache" status of the link.
 	 * @return	string		The body of the filename.
 	 */
-	public function makeSimulatedFileName($inTitle, $page, $type, $addParams = '', $no_cache = FALSE) {
+	public function makeSimulatedFileName($inTitle, $page, $type, $addParams = '', $no_cache = FALSE)
+    {
 			// Default value is 30 but values > 1 will be override this
-		$titleChars = intval($this->conf['addTitle']);
+		$titleChars = (int)($this->conf['addTitle']);
 		if ($titleChars == 1) {
 			$titleChars = 30;
 		}
@@ -343,7 +352,8 @@ class tx_simulatestatic {
 	 * @return	string		The filename (without path)
 	 * @see makeSimulatedFileName()
 	 */
-	public function getSimulatedFileName() {
+	public function getSimulatedFileName()
+    {
 		return $this->makeSimulatedFileName(
 			$GLOBALS['TSFE']->page['title'],
 			($GLOBALS['TSFE']->page['alias'] ? $GLOBALS['TSFE']->page['alias'] : $GLOBALS['TSFE']->id),
@@ -359,10 +369,11 @@ class tx_simulatestatic {
 	 * @return	array		Two num keys returned, first is the parameters that MAY be encoded, second is the non-encodable parameters.
 	 * @see makeSimulatedFileName(), t3lib_tstemplate::linkData()
 	 */
-	public function processEncodedQueryString($linkVars) {
+	public function processEncodedQueryString($linkVars)
+    {
 		$remainingLinkVars = '';
 		if (strcmp($linkVars, '')) {
-			$parts = t3lib_div::trimExplode('&', $linkVars);
+			$parts = GeneralUtility::trimExplode('&', $linkVars);
 			// This sorts the parameters - and may not be needed and further
 			// it will generate new MD5 hashes in many cases. Maybe not so smart. Hmm?
 			sort($parts);
@@ -394,7 +405,8 @@ class tx_simulatestatic {
 	 * @param	string		Character to put in the end of string to merge it with the next value.
 	 * @return	string		Converted string
 	 */
-	public function fileNameASCIIPrefix($inTitle, $maxTitleChars, $mergeChar = '.') {
+	public function fileNameASCIIPrefix($inTitle, $maxTitleChars, $mergeChar = '.')
+    {
 		$out = $GLOBALS['TSFE']->csConvObj->specCharsToASCII($GLOBALS['TSFE']->renderCharset, $inTitle);
 
 		// Get replacement character
@@ -408,8 +420,3 @@ class tx_simulatestatic {
 		return (strlen($out) ? $out . $mergeChar : '');
 	}
 }
-
-if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/simulatestatic/class.tx_simulatestatic.php'])) {
-	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/simulatestatic/class.tx_simulatestatic.php']);
-}
-?>
