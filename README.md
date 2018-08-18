@@ -2,6 +2,10 @@
 
 **Adds the possibility to have Speaking URLs in the TYPO3 Frontend pages.**
 
+Have a look at https://github.com/colorcube/simulate_static_urls as alternative which is more or less backward compatible.
+
+## Overview
+
 The extension was excluded from the TYPO3 core with version 6.0 
 and is available from the TER (version 2.0.0).
 
@@ -20,9 +24,7 @@ There are also some tutorials online.
 
 There's none. Just keep this extension working and fix bugs.
 
-Generally I still like the concept of simulatestatic. And for many use cases it is just fine. 
-But instead of working on this extension for new features,
-I would prefer to write a new cleaner extension with the same features (and some more).
+You might consider https://github.com/colorcube/simulate_static_urls as alternative.
 
 ## Contribute
 
